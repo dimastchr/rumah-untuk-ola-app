@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { MotionConfig, AnimatePresence, motion } from 'motion/react';
 import { UserProgress, ReadingLevel } from './types';
 import { loadProgress, saveProgress, resetProgress } from './utils/storage';
 import { speechService } from './utils/speech';
@@ -8,8 +9,6 @@ import { CharacterScreen } from './components/CharacterScreen';
 import { TeacherGuideScreen } from './components/TeacherGuideScreen';
 import { EndingScreen } from './components/EndingScreen';
 import { SceneContainer } from './components/SceneContainer';
-
-// Individual scenes
 import { Scene1Nest } from './components/scenes/Scene1Nest';
 import { Scene2Smoke } from './components/scenes/Scene2Smoke';
 import { Scene3Peatland } from './components/scenes/Scene3Peatland';
@@ -18,246 +17,148 @@ import { Scene5Village } from './components/scenes/Scene5Village';
 import { Scene6Firefighters } from './components/scenes/Scene6Firefighters';
 import { Scene7NewHome } from './components/scenes/Scene7NewHome';
 
+const SCENE_COMPONENTS: Record<number, React.FC<{ onComplete: () => void }>> = {
+  1: Scene1Nest,
+  2: Scene2Smoke,
+  3: Scene3Peatland,
+  4: Scene4Friends,
+  5: Scene5Village,
+  6: Scene6Firefighters,
+  7: Scene7NewHome,
+};
+
 export default function App() {
   const [progress, setProgress] = useState<UserProgress>(() => loadProgress());
+  const [starToast, setStarToast] = useState<number | null>(null);
+  const toastTimer = useRef<number | null>(null);
 
-  // Keep speechService sound state synced with user preference
   useEffect(() => {
     speechService.setSoundEnabled(progress.soundEnabled);
   }, [progress.soundEnabled]);
 
-  const updateAndSave = (partial: Partial<UserProgress>) => {
-    setProgress((prev) => {
-      const updated = { ...prev, ...partial };
-      saveProgress(updated);
-      return updated;
-    });
+  useEffect(() => {
+    saveProgress(progress);
+  }, [progress]);
+
+  useEffect(() => () => {
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+  }, []);
+
+  const update = (partial: Partial<UserProgress>) => setProgress((prev) => ({ ...prev, ...partial }));
+
+  const navigate = (sceneId: number) => {
+    speechService.stopAll(); // narasi berhenti saat meninggalkan adegan
+    update({ currentScene: sceneId });
+    window.scrollTo({ top: 0 });
   };
 
-  const handleSelectLevel = (level: ReadingLevel) => {
-    updateAndSave({ readingLevel: level });
-    speechService.speak(`Level ${level} dipilih!`, { rate: 1.0, pitch: 1.15 });
-  };
-
-  const handleToggleSound = () => {
-    const nextSound = !progress.soundEnabled;
-    updateAndSave({ soundEnabled: nextSound });
-    speechService.setSoundEnabled(nextSound);
-  };
-
-  const handleToggleUppercase = () => {
-    updateAndSave({ isUppercase: !progress.isUppercase });
-  };
-
-  const handleNavigateScene = (sceneId: number) => {
+  // Bintang hanya diberikan saat misi adegan benar-benar selesai.
+  const completeScene = (sceneId: number) => {
     speechService.stopAll();
-    updateAndSave({ currentScene: sceneId });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const next = sceneId < 7 ? sceneId + 1 : 8;
+    const isNewStar = !progress.earnedStars.includes(sceneId);
+    setProgress((prev) => ({
+      ...prev,
+      earnedStars: prev.earnedStars.includes(sceneId) ? prev.earnedStars : [...prev.earnedStars, sceneId].sort(),
+      unlockedScenes: prev.unlockedScenes.includes(next) ? prev.unlockedScenes : [...prev.unlockedScenes, next],
+      currentScene: next,
+    }));
+    window.scrollTo({ top: 0 });
+    if (isNewStar) {
+      setStarToast(sceneId);
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+      toastTimer.current = window.setTimeout(() => setStarToast(null), 1800);
+    }
   };
 
-  const handleCompleteScene = (sceneId: number) => {
-    // Add star if not earned yet
-    const earnedStars = progress.earnedStars.includes(sceneId)
-      ? progress.earnedStars
-      : [...progress.earnedStars, sceneId];
+  const selectLevel = (level: ReadingLevel) => update({ readingLevel: level });
 
-    // Unlock next scene if valid
-    const nextSceneId = sceneId + 1;
-    const unlockedScenes = progress.unlockedScenes.includes(nextSceneId)
-      ? progress.unlockedScenes
-      : [...progress.unlockedScenes, nextSceneId];
-
-    updateAndSave({
-      earnedStars,
-      unlockedScenes,
-      currentScene: nextSceneId > 7 ? 8 : nextSceneId,
-    });
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleSaveMessage = (msg: string) => {
-    updateAndSave({ olaMessage: msg });
-  };
-
-  const handleReset = () => {
-    speechService.stopAll();
-    const fresh = resetProgress();
-    setProgress(fresh);
-  };
+  const cur = progress.currentScene;
+  const SceneComp = SCENE_COMPONENTS[cur];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-emerald-50/20 to-amber-50/40 text-slate-900 flex flex-col font-body selection:bg-amber-200">
-      {/* Top Navbar */}
-      <Navbar
-        currentScene={progress.currentScene}
-        readingLevel={progress.readingLevel}
-        earnedStarsCount={progress.earnedStars.length}
-        soundEnabled={progress.soundEnabled}
-        isUppercase={progress.isUppercase}
-        onHomeClick={() => handleNavigateScene(0)}
-        onToggleSound={handleToggleSound}
-        onToggleUppercase={handleToggleUppercase}
-        onSelectLevel={handleSelectLevel}
-        onOpenCharacters={() => handleNavigateScene(9)}
-        onOpenTeacherGuide={() => handleNavigateScene(10)}
-      />
+    <MotionConfig reducedMotion="user">
+      <div className="flex min-h-screen flex-col">
+        <a href="#isi" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-xl focus:bg-white focus:p-3">
+          Lompat ke isi
+        </a>
+        <Navbar
+          earnedStarsCount={progress.earnedStars.length}
+          soundEnabled={progress.soundEnabled}
+          starPulse={progress.earnedStars.length}
+          onHomeClick={() => navigate(0)}
+          onToggleSound={() => update({ soundEnabled: !progress.soundEnabled })}
+        />
 
-      {/* Main Content Area */}
-      <main className="flex-1 pb-10">
-        {/* 0 = Cover Screen */}
-        {progress.currentScene === 0 && (
-          <CoverScreen
-            readingLevel={progress.readingLevel}
-            unlockedScenes={progress.unlockedScenes}
-            earnedStars={progress.earnedStars}
-            onSelectLevel={handleSelectLevel}
-            onStartStory={(sceneId) => handleNavigateScene(sceneId)}
-            onOpenCharacters={() => handleNavigateScene(9)}
-            onOpenTeacherGuide={() => handleNavigateScene(10)}
-            onResetProgress={handleReset}
-          />
-        )}
+        <main id="isi" className="flex-1 pb-10">
+          {cur === 0 && (
+            <CoverScreen
+              readingLevel={progress.readingLevel}
+              unlockedScenes={progress.unlockedScenes}
+              earnedStars={progress.earnedStars}
+              onSelectLevel={selectLevel}
+              onStartStory={navigate}
+              onOpenCharacters={() => navigate(9)}
+              onOpenTeacherGuide={() => navigate(10)}
+              onResetProgress={() => {
+                speechService.stopAll();
+                setProgress(resetProgress());
+              }}
+            />
+          )}
 
-        {/* 1 = Scene 1: Pagi di Hutan */}
-        {progress.currentScene === 1 && (
-          <SceneContainer
-            sceneId={1}
-            readingLevel={progress.readingLevel}
-            isUppercase={progress.isUppercase}
-            soundEnabled={progress.soundEnabled}
-            unlockedScenes={progress.unlockedScenes}
-            onNavigateScene={handleNavigateScene}
-            onBackToHome={() => handleNavigateScene(0)}
-          >
-            <Scene1Nest onComplete={() => handleCompleteScene(1)} />
-          </SceneContainer>
-        )}
+          {SceneComp && (
+            <SceneContainer
+              key={cur}
+              sceneId={cur}
+              readingLevel={progress.readingLevel}
+              isUppercase={progress.isUppercase}
+              soundEnabled={progress.soundEnabled}
+              unlockedScenes={progress.unlockedScenes}
+              onNavigateScene={navigate}
+              onSelectLevel={selectLevel}
+              onToggleUppercase={() => update({ isUppercase: !progress.isUppercase })}
+            >
+              <SceneComp onComplete={() => completeScene(cur)} />
+            </SceneContainer>
+          )}
 
-        {/* 2 = Scene 2: Asap Datang */}
-        {progress.currentScene === 2 && (
-          <SceneContainer
-            sceneId={2}
-            readingLevel={progress.readingLevel}
-            isUppercase={progress.isUppercase}
-            soundEnabled={progress.soundEnabled}
-            unlockedScenes={progress.unlockedScenes}
-            onNavigateScene={handleNavigateScene}
-            onBackToHome={() => handleNavigateScene(0)}
-          >
-            <Scene2Smoke onComplete={() => handleCompleteScene(2)} />
-          </SceneContainer>
-        )}
+          {cur === 8 && (
+            <EndingScreen
+              earnedStars={progress.earnedStars}
+              savedMessage={progress.olaMessage}
+              onSaveMessage={(m) => update({ olaMessage: m })}
+              onRestart={() => navigate(1)}
+              onOpenTeacherGuide={() => navigate(10)}
+            />
+          )}
 
-        {/* 3 = Scene 3: Tanah yang Berasap */}
-        {progress.currentScene === 3 && (
-          <SceneContainer
-            sceneId={3}
-            readingLevel={progress.readingLevel}
-            isUppercase={progress.isUppercase}
-            soundEnabled={progress.soundEnabled}
-            unlockedScenes={progress.unlockedScenes}
-            onNavigateScene={handleNavigateScene}
-            onBackToHome={() => handleNavigateScene(0)}
-          >
-            <Scene3Peatland onComplete={() => handleCompleteScene(3)} />
-          </SceneContainer>
-        )}
+          {cur === 9 && <CharacterScreen onBack={() => navigate(0)} />}
+          {cur === 10 && <TeacherGuideScreen onBack={() => navigate(0)} onJumpToScene={navigate} />}
+        </main>
 
-        {/* 4 = Scene 4: Teman Baru */}
-        {progress.currentScene === 4 && (
-          <SceneContainer
-            sceneId={4}
-            readingLevel={progress.readingLevel}
-            isUppercase={progress.isUppercase}
-            soundEnabled={progress.soundEnabled}
-            unlockedScenes={progress.unlockedScenes}
-            onNavigateScene={handleNavigateScene}
-            onBackToHome={() => handleNavigateScene(0)}
-          >
-            <Scene4Friends onComplete={() => handleCompleteScene(4)} />
-          </SceneContainer>
-        )}
+        <AnimatePresence>
+          {starToast !== null && (
+            <motion.div
+              role="status"
+              aria-live="polite"
+              initial={{ y: -80, opacity: 0, scale: 0.6 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: -40, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+              className="pointer-events-none fixed left-1/2 top-20 z-50 -translate-x-1/2 rounded-full border-4 border-sun-400 bg-white px-6 py-3 font-display text-2xl font-bold text-bark shadow-2xl"
+            >
+              <span aria-hidden="true">⭐ </span>+1 Bintang!
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* 5 = Scene 5: Di Desa Tepi Hutan */}
-        {progress.currentScene === 5 && (
-          <SceneContainer
-            sceneId={5}
-            readingLevel={progress.readingLevel}
-            isUppercase={progress.isUppercase}
-            soundEnabled={progress.soundEnabled}
-            unlockedScenes={progress.unlockedScenes}
-            onNavigateScene={handleNavigateScene}
-            onBackToHome={() => handleNavigateScene(0)}
-          >
-            <Scene5Village onComplete={() => handleCompleteScene(5)} />
-          </SceneContainer>
-        )}
-
-        {/* 6 = Scene 6: Penjaga Hutan Datang */}
-        {progress.currentScene === 6 && (
-          <SceneContainer
-            sceneId={6}
-            readingLevel={progress.readingLevel}
-            isUppercase={progress.isUppercase}
-            soundEnabled={progress.soundEnabled}
-            unlockedScenes={progress.unlockedScenes}
-            onNavigateScene={handleNavigateScene}
-            onBackToHome={() => handleNavigateScene(0)}
-          >
-            <Scene6Firefighters onComplete={() => handleCompleteScene(6)} />
-          </SceneContainer>
-        )}
-
-        {/* 7 = Scene 7: Rumah Baru */}
-        {progress.currentScene === 7 && (
-          <SceneContainer
-            sceneId={7}
-            readingLevel={progress.readingLevel}
-            isUppercase={progress.isUppercase}
-            soundEnabled={progress.soundEnabled}
-            unlockedScenes={progress.unlockedScenes}
-            onNavigateScene={handleNavigateScene}
-            onBackToHome={() => handleNavigateScene(0)}
-          >
-            <Scene7NewHome onComplete={() => handleCompleteScene(7)} />
-          </SceneContainer>
-        )}
-
-        {/* 8 = Ending Screen */}
-        {progress.currentScene === 8 && (
-          <EndingScreen
-            earnedStars={progress.earnedStars}
-            savedMessage={progress.olaMessage}
-            onSaveMessage={handleSaveMessage}
-            onRestart={() => handleNavigateScene(1)}
-            onOpenTeacherGuide={() => handleNavigateScene(10)}
-          />
-        )}
-
-        {/* 9 = Character Screen */}
-        {progress.currentScene === 9 && (
-          <CharacterScreen onBack={() => handleNavigateScene(0)} />
-        )}
-
-        {/* 10 = Teacher Guide Screen */}
-        {progress.currentScene === 10 && (
-          <TeacherGuideScreen
-            onBack={() => handleNavigateScene(0)}
-            onJumpToScene={(sId) => handleNavigateScene(sId)}
-          />
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-amber-200/80 bg-white/80 py-4 px-4 text-center text-xs text-slate-500">
-        <p className="font-semibold text-slate-700">
-          Rumah untuk Ola &bull; Media Cerita Interaktif Literasi & Sains Lingkungan Siswa SD Kelas 1–3
-        </p>
-        <p className="mt-1 text-[11px] text-slate-400">
-          Didedikasikan untuk edukasi pelestarian orangutan dan perlindungan hutan gambut Kalimantan.
-        </p>
-      </footer>
-    </div>
+        <footer className="border-t-4 border-forest-100 bg-white/80 px-4 py-4 text-center text-base text-bark/80">
+          <p className="font-display font-bold text-forest-800">Rumah untuk Ola · Cerita interaktif SD kelas 1–3</p>
+          <p>Disusun oleh Dimas Yuli Rakasiwi · SDN Ngadimulyo, Kab. Pasuruan</p>
+          <p className="text-sm">Didedikasikan untuk edukasi pelestarian orangutan dan perlindungan hutan gambut Kalimantan.</p>
+        </footer>
+      </div>
+    </MotionConfig>
   );
 }

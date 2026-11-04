@@ -1,22 +1,81 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: 'Fredoka', 'Baloo 2', ui-rounded, 'Segoe UI Rounded', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Baloo 2', 'Fredoka', ui-rounded, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --color-forest-50: #eefaf1;
+  --color-forest-100: #d5f2dc;
+  --color-forest-200: #a9e3b8;
+  --color-forest-500: #3fa363;
+  --color-forest-600: #2e8a50;
+  --color-forest-700: #236c3f;
+  --color-forest-800: #1b5531;
+  --color-forest-900: #133d23;
+
+  --color-sun-100: #fff4c2;
+  --color-sun-200: #ffe88a;
+  --color-sun-300: #ffd93d;
+  --color-sun-400: #ffc914;
+  --color-sun-500: #f2b100;
+
+  --color-sky-100: #e0f3fd;
+  --color-sky-200: #b9e4fa;
+  --color-sky-400: #4fb3e8;
+  --color-sky-600: #1f7fb8;
+  --color-sky-700: #17628f;
+
+  --color-cream: #fff9ea;
+  --color-bark: #4a2f1b;
 }
+
+html { -webkit-text-size-adjust: 100%; }
 
 body {
   font-family: var(--font-body);
-  user-select: none;
-  -webkit-user-select: none;
+  background:
+    radial-gradient(circle at 10% 0%, #fff4c2 0, transparent 40%),
+    radial-gradient(circle at 100% 20%, #e0f3fd 0, transparent 45%),
+    #fff9ea;
+  color: var(--color-bark);
   -webkit-tap-highlight-color: transparent;
+  font-size: 18px;
+  line-height: 1.5;
 }
 
-h1, h2, h3, h4, .font-display {
-  font-family: var(--font-display);
+h1, h2, h3, h4, .font-display { font-family: var(--font-display); }
+
+button, [role="button"], a { touch-action: manipulation; }
+
+/* Clear keyboard focus for every control */
+:focus-visible {
+  outline: 4px solid #1f7fb8;
+  outline-offset: 3px;
+  border-radius: 14px;
 }
 
-/* Touch friendly bouncing and smooth transitions */
-button, [role="button"] {
-  touch-action: manipulation;
+.drag-handle { touch-action: none; user-select: none; -webkit-user-select: none; }
+
+.leaf-node { border-radius: 60% 0 60% 0; }
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-6deg); }
+  75% { transform: rotate(6deg); }
+}
+.wiggle { animation: wiggle 0.5s ease-in-out 2; }
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.floaty { animation: floaty 3s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
