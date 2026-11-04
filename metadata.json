@@ -1,0 +1,6 @@
+{
+  "name": "Rumah untuk Ola",
+  "description": "Aplikasi web cerita interaktif bercabang 'Rumah untuk Ola' untuk siswa SD kelas 1–3 dengan narasi audio, teks menyala per kata, simulasi gambut, dan mini game ramah anak.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
