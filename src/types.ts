@@ -73,7 +73,7 @@ export const SCENES: Record<number, SceneData> = {
     imageAlt: 'Ola di atas pohon bersama Rara si rangkong, memandang tanah gambut yang berasap.',
     narrationAudio: ASSETS.audio(3),
     narrationText:
-      'Rara si rangkong terbang mendekat. Rara menjelaskan fenomena tanah gambut yang berasap kepada Ola.',
+      'Rara si rangkong terbang mendekat. Tanah ini seperti spons dari daun lama. Kalau terbakar, apinya bersembunyi di dalam tanah dan sulit dipadamkan.',
     speechStart: 0.31,
     speechEnd: 18.7,
     easyLines: ['Api ada di tanah gambut.'],
