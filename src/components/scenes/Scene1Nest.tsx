@@ -2,18 +2,34 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { speechService } from '../../utils/speech';
 import { Draggable } from '../Draggable';
-import { Arena, BigButton, PopCard, Bubble } from '../ui';
+import { Arena, BigButton, PopCard, Bubble, NextRow } from '../ui';
+import { ThinkQuestion, SpeakButton } from '../Think';
 import { SCENES } from '../../types';
 
 interface Props {
   onComplete: () => void;
 }
 
-const ITEMS = [
-  { id: 'ranting-1', name: 'Ranting', icon: '🪵' },
-  { id: 'daun-1', name: 'Daun', icon: '🍃' },
-  { id: 'ranting-2', name: 'Ranting', icon: '🪵' },
-  { id: 'daun-2', name: 'Daun', icon: '🍃' },
+// Bahan sarang (ranting dan daun) + pengecoh (plastik dan batu)
+const ALL_ITEMS = [
+  { id: 'ranting-1', name: 'Ranting', icon: '🪵', good: true },
+  { id: 'plastik', name: 'Plastik', icon: '🧴', good: false },
+  { id: 'daun-1', name: 'Daun', icon: '🍃', good: true },
+  { id: 'batu', name: 'Batu', icon: '🪨', good: false },
+  { id: 'ranting-2', name: 'Ranting', icon: '🪵', good: true },
+  { id: 'daun-2', name: 'Daun', icon: '🍃', good: true },
+];
+const ITEMS = ALL_ITEMS.filter((i) => i.good);
+
+const INSTRUCTION = 'Pilih bahan yang cocok untuk sarang Ola.';
+const DISTRACTOR = 'Plastik dan batu bukan dari pohon. Pilih ranting dan daun, ya.';
+
+const QUESTION = 'Mengapa Ola perlu hutan yang banyak pohonnya?';
+const WRONG_Q = 'Coba baca lagi. Dari apa sarang Ola dibuat?';
+const OPTIONS = [
+  { text: 'Sarang Ola dibuat dari ranting dan daun pohon.', correct: true, feedback: 'Tepat! Sarang Ola dibuat dari ranting dan daun pohon.' },
+  { text: 'Ola suka bermain pasir.', feedback: WRONG_Q },
+  { text: 'Ola tidur di dalam sungai.', feedback: WRONG_Q },
 ];
 
 const FEEDBACK = 'Hebat! Sarang Ola sudah jadi. Orangutan tidur di sarang baru setiap malam.';
@@ -25,9 +41,23 @@ export const Scene1Nest: React.FC<Props> = ({ onComplete }) => {
   const [hover, setHover] = useState(false);
   const [done, setDone] = useState(false);
   const [showFact, setShowFact] = useState(false);
+  const [answered, setAnswered] = useState(false);
+  const [shake, setShake] = useState<string | null>(null);
+  const [hint, setHint] = useState(false);
 
   const place = (id: string) => {
     if (placed.includes(id)) return;
+    const item = ALL_ITEMS.find((i) => i.id === id);
+    if (!item?.good) {
+      // Pengecoh: kembali ke tempatnya + umpan balik lembut
+      setSelected(null);
+      setShake(id);
+      window.setTimeout(() => setShake(null), 700);
+      setHint(true);
+      speechService.speak(DISTRACTOR);
+      return;
+    }
+    setHint(false);
     const next = [...placed, id];
     setPlaced(next);
     setSelected(null);
@@ -46,8 +76,8 @@ export const Scene1Nest: React.FC<Props> = ({ onComplete }) => {
   const tapBranch = () => {
     if (selected) place(selected);
     else {
-      const first = ITEMS.find((i) => !placed.includes(i.id));
-      if (first) place(first.id);
+      // Belum memilih bahan: ingatkan instruksi
+      speechService.speak(INSTRUCTION);
     }
   };
 
@@ -56,7 +86,10 @@ export const Scene1Nest: React.FC<Props> = ({ onComplete }) => {
       <Arena title="Bantu Ola membuat sarang" icon="🪺" right={<span className="rounded-full bg-sun-200 px-3 py-1 font-display text-lg font-bold text-bark">{placed.length}/{ITEMS.length}</span>}>
         {!done ? (
           <>
-            <p className="text-lg font-semibold text-bark">Seret ranting dan daun ke dahan.</p>
+            <div className="flex items-start gap-3">
+              <p className="flex-1 text-lg sm:text-xl font-bold text-bark">{INSTRUCTION}</p>
+              <SpeakButton text={INSTRUCTION} />
+            </div>
             {/* Tujuan lepas: dahan pohon */}
             <button
               type="button"
@@ -80,8 +113,8 @@ export const Scene1Nest: React.FC<Props> = ({ onComplete }) => {
             </button>
 
             {/* Bahan sarang */}
-            <div className="grid grid-cols-4 gap-2 sm:gap-3">
-              {ITEMS.map((it) =>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3">
+              {ALL_ITEMS.map((it) =>
                 placed.includes(it.id) ? (
                   <div key={it.id} aria-hidden="true" className="min-h-24 rounded-3xl border-4 border-dashed border-forest-100" />
                 ) : (
@@ -89,6 +122,7 @@ export const Scene1Nest: React.FC<Props> = ({ onComplete }) => {
                     key={it.id}
                     id={it.id}
                     label={`${it.name}. Seret ke dahan, atau ketuk lalu ketuk dahan.`}
+                    shake={shake === it.id}
                     selected={selected === it.id}
                     onTap={(id) => setSelected((s) => (s === id ? null : id))}
                     onDrop={(id, target) => {
@@ -106,6 +140,7 @@ export const Scene1Nest: React.FC<Props> = ({ onComplete }) => {
               )}
             </div>
             <p className="text-base text-bark/80">Atau ketuk bahan, lalu ketuk dahan.</p>
+            {hint && <Bubble who="ola" tone="hint">{DISTRACTOR}</Bubble>}
           </>
         ) : (
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-3">
@@ -131,14 +166,15 @@ export const Scene1Nest: React.FC<Props> = ({ onComplete }) => {
             <BigButton tone="sky" icon="🔊" onClick={() => speechService.speak(`Tahukah kamu? ${FACT}`)}>
               Dengar
             </BigButton>
-            <BigButton tone="green" icon="▶" onClick={onComplete}>
-              Lanjut
-            </BigButton>
           </>
         }
       >
         {FACT}
       </PopCard>
+
+      {showFact && <ThinkQuestion question={QUESTION} options={OPTIONS} onDone={() => setAnswered(true)} />}
+
+      {answered && <NextRow onClick={onComplete} icon="▶" label="Lanjut" />}
     </div>
   );
 };

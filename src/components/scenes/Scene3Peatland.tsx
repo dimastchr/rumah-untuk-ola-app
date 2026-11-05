@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { speechService } from '../../utils/speech';
-import { Arena, Avatar, BigButton, PopCard } from '../ui';
+import { Arena, Avatar, BigButton, PopCard, NextRow } from '../ui';
+import { ThinkQuestion, OrderCards } from '../Think';
+import { speakThen } from '../../utils/speakThen';
 
 interface Props {
   onComplete: () => void;
@@ -10,12 +12,37 @@ interface Props {
 const RARA = 'Tanah ini seperti spons dari daun lama. Kalau terbakar, apinya bersembunyi di dalam tanah dan sulit dipadamkan.';
 const FACT = 'Gambut basah menyimpan banyak air seperti spons raksasa.';
 
+const SEQ_INSTRUCTION = 'Urutkan kejadiannya. Mana yang terjadi lebih dulu?';
+const SEQUENCE = [
+  'Gambut kering terbakar.',
+  'Api bersembunyi di dalam tanah.',
+  'Asap tebal keluar.',
+  'Ola terpisah dari ibunya.',
+];
+const SEQ_OK = 'Hebat! Kamu menemukan sebab dan akibatnya.';
+const SEQ_WRONG = 'Hmm, urutannya belum pas. Apa yang terjadi lebih dulu?';
+
+const QUESTION = 'Gambut mana yang lebih sulit terbakar?';
+const WRONG_Q = 'Coba lagi. Gambut mana yang menyimpan banyak air?';
+const OPTIONS = [
+  { text: 'Gambut basah.', correct: true, feedback: 'Tepat! Gambut basah menyimpan banyak air.' },
+  { text: 'Gambut kering.', feedback: WRONG_Q },
+  { text: 'Gambut berasap.', feedback: WRONG_Q },
+];
+
 export const Scene3Peatland: React.FC<Props> = ({ onComplete }) => {
   const [wet, setWet] = useState(false);
+  const [showSeq, setShowSeq] = useState(false);
+  const [seqDone, setSeqDone] = useState(false);
+  const [answered, setAnswered] = useState(false);
 
   const pressSponge = () => {
+    if (wet) {
+      speechService.speak(FACT);
+      return;
+    }
     setWet(true);
-    speechService.speak(FACT);
+    speakThen(FACT, () => setShowSeq(true), 7000);
   };
 
   return (
@@ -78,14 +105,23 @@ export const Scene3Peatland: React.FC<Props> = ({ onComplete }) => {
         title="💡 Tahukah Kamu?"
         emoji="🧽"
         tone="sky"
-        action={
-          <BigButton tone="green" icon="▶" onClick={onComplete}>
-            Lanjut
-          </BigButton>
-        }
       >
         {FACT}
       </PopCard>
+
+      {showSeq && (
+        <OrderCards
+          instruction={SEQ_INSTRUCTION}
+          items={SEQUENCE}
+          correctFeedback={SEQ_OK}
+          wrongFeedback={SEQ_WRONG}
+          onDone={() => setSeqDone(true)}
+        />
+      )}
+
+      {seqDone && <ThinkQuestion question={QUESTION} options={OPTIONS} onDone={() => setAnswered(true)} />}
+
+      {answered && <NextRow onClick={onComplete} icon="▶" label="Lanjut" />}
     </div>
   );
 };

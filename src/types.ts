@@ -1,4 +1,6 @@
-export type ReadingLevel = 'mudah' | 'sedang';
+export type ReadingLevel = 'mudah' | 'sedang' | 'menantang';
+
+export const READING_LEVELS: ReadingLevel[] = ['mudah', 'sedang', 'menantang'];
 
 export interface UserProgress {
   readingLevel: ReadingLevel;
@@ -24,8 +26,14 @@ export interface SceneData {
   speechEnd: number;
   /** Kalimat Bacaan Anak di Layar, persis naskah Dev1 */
   easyLines: string[];
+  /** Level Sedang (3 kalimat), persis spek revisi HOTS 2026-11-05 */
   mediumLines: string[];
+  /** Level Menantang (5–6 kalimat, ada kata hubung), persis spek revisi HOTS 2026-11-05 */
+  hardLines: string[];
 }
+
+export const linesFor = (scene: SceneData, level: ReadingLevel) =>
+  level === 'mudah' ? scene.easyLines : level === 'menantang' ? scene.hardLines : scene.mediumLines;
 
 const CDN = 'https://cdn.jsdelivr.net/gh/dimastchr/rumah-untuk-ola@main/assets/';
 
@@ -34,6 +42,10 @@ export const ASSETS = {
   coverImg: `${CDN}2_sampul.jpg`,
   scene: (n: number) => `${CDN}${n + 2}_adegan-${n}.jpg`,
   audio: (n: number) => `${CDN}narasi_adegan-${n}.mp3`,
+  /** Adegan 7: gambar transparan Ola, Ibu, dan Ola-Ibu berpelukan */
+  olaSendiri: `${CDN}ola_sendiri.webp`,
+  ibuSendiri: `${CDN}ibu_sendiri.webp`,
+  olaIbuPeluk: `${CDN}ola_ibu_peluk.webp`,
 };
 
 export const SCENES: Record<number, SceneData> = {
@@ -49,7 +61,8 @@ export const SCENES: Record<number, SceneData> = {
     speechStart: 0,
     speechEnd: 14.45,
     easyLines: ['Ola anak orangutan.', 'Ola buat sarang daun.'],
-    mediumLines: ['Ola belajar membuat sarang dari daun.'],
+    mediumLines: ['Pagi ini Ola belajar bersama ibunya.', 'Mereka membuat sarang di atas pohon.', 'Sarang dibuat dari ranting dan daun.'],
+    hardLines: ['Ola tinggal di hutan Kalimantan.', 'Ola dan ibunya tidur di atas pohon.', 'Setiap malam, mereka membuat sarang baru.', 'Ola menyusun ranting dan daun dengan rapi.', 'Sarang di pohon adalah rumah Ola.'],
   },
   2: {
     id: 2,
@@ -63,7 +76,8 @@ export const SCENES: Record<number, SceneData> = {
     speechStart: 0.25,
     speechEnd: 14.17,
     easyLines: ['Asap tebal datang.', 'Ola harus memilih.'],
-    mediumLines: ['Asap tebal datang. Ola harus memilih.'],
+    mediumLines: ['Asap tebal masuk ke hutan.', 'Mata Ola perih dan Ola batuk.', 'Ola terpisah dari ibunya.'],
+    hardLines: ['Tiba-tiba asap tebal masuk ke hutan.', 'Mata Ola perih dan Ola batuk-batuk.', 'Ola terpisah dari ibunya.', 'Di bawah, tanah penuh asap tebal.', 'Di pohon hijau, udaranya lebih bersih.', 'Ola harus memilih dengan cermat.'],
   },
   3: {
     id: 3,
@@ -77,7 +91,8 @@ export const SCENES: Record<number, SceneData> = {
     speechStart: 0.31,
     speechEnd: 18.7,
     easyLines: ['Api ada di tanah gambut.'],
-    mediumLines: ['Api bersembunyi di dalam tanah gambut.'],
+    mediumLines: ['Rara si rangkong terbang mendekat.', 'Rara bercerita tentang tanah gambut.', 'Api bisa bersembunyi di dalam gambut.'],
+    hardLines: ['Rara si rangkong hinggap di dekat Ola.', 'Rara menunjuk tanah yang berasap.', 'Tanah itu bernama gambut.', 'Gambut basah menyimpan banyak air.', 'Kalau gambut kering terbakar, api bersembunyi di dalam tanah.', 'Api itu sulit dipadamkan.'],
   },
   4: {
     id: 4,
@@ -91,7 +106,8 @@ export const SCENES: Record<number, SceneData> = {
     speechStart: 0.34,
     speechEnd: 12.34,
     easyLines: ['Bima dan Rara lapar.', 'Beri makanan yang tepat.'],
-    mediumLines: ['Ayo beri makanan tepat untuk teman Ola.'],
+    mediumLines: ['Ola bertemu Bima dan Rara.', 'Mereka lapar karena rumahnya terganggu asap.', 'Ayo beri makanan yang tepat.'],
+    hardLines: ['Ola bertemu dua teman baru.', 'Bima si bekantan berhidung panjang.', 'Rara si rangkong berparuh besar.', 'Mereka lapar karena rumahnya terganggu asap.', 'Bima suka daun muda.', 'Rara suka buah ara.'],
   },
   5: {
     id: 5,
@@ -105,7 +121,8 @@ export const SCENES: Record<number, SceneData> = {
     speechStart: 0.27,
     speechEnd: 13.09,
     easyLines: ['Jangan bakar hutan kami.'],
-    mediumLines: ['Jangan bakar, Pak. Hutan rumah kami.'],
+    mediumLines: ['Di tepi desa ada seorang bapak.', 'Bapak itu hendak membakar lahan.', 'Ola dan teman-teman cemas.'],
+    hardLines: ['Ola, Bima, dan Rara tiba di tepi desa.', 'Mereka melihat bapak membawa pemantik api.', 'Bapak itu hendak membakar lahan.', 'Ola dan teman-teman cemas.', 'Mereka ingin mengajak Bapak dengan santun.'],
   },
   6: {
     id: 6,
@@ -119,7 +136,8 @@ export const SCENES: Record<number, SceneData> = {
     speechStart: 0.27,
     speechEnd: 11.75,
     easyLines: ['Petugas padamkan api hutan.', 'Relawan tanam bibit pohon.'],
-    mediumLines: ['Petugas dan relawan bersama menjaga hutan.'],
+    mediumLines: ['Petugas Manggala Agni datang membantu.', 'Relawan datang membawa bibit pohon.', 'Mereka bekerja sama menjaga hutan.'],
+    hardLines: ['Petugas Manggala Agni dan relawan datang.', 'Petugas memadamkan api dengan air.', 'Lalu gambut disiram sampai basah.', 'Setelah itu, relawan menanam bibit pohon.', 'Mereka bekerja sama menjaga hutan.'],
   },
   7: {
     id: 7,
@@ -133,6 +151,7 @@ export const SCENES: Record<number, SceneData> = {
     speechStart: 0.31,
     speechEnd: 18.46,
     easyLines: ['Hutan hijau kembali.', 'Ola punya rumah lagi.'],
-    mediumLines: ['Ola gembira punya rumah lagi.'],
+    mediumLines: ['Pohon-pohon tumbuh hijau kembali.', 'Ola bertemu lagi dengan ibunya.', 'Ola gembira punya rumah lagi.'],
+    hardLines: ['Hutan perlahan hijau kembali.', 'Ola bertemu lagi dengan ibunya.', 'Mereka berpelukan dengan gembira.', 'Malam ini Ola membuat sarang baru.', 'Ola punya rumah lagi.', 'Ola ingin hutan tetap terjaga.'],
   },
 };

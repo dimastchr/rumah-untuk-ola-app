@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { speechService } from '../../utils/speech';
 import { Arena, Avatar, BigButton, Bubble, NextRow } from '../ui';
+import { ThinkQuestion } from '../Think';
+import { speakThen } from '../../utils/speakThen';
 
 interface Props {
   onComplete: () => void;
@@ -9,11 +11,21 @@ interface Props {
 
 const ORDER_HINT = 'Padamkan apinya dulu, ya.';
 
+const QUESTION = 'Mengapa gambut tetap disiram setelah api padam?';
+const WRONG_Q = 'Coba ingat cerita Rara tentang gambut.';
+const OPTIONS = [
+  { text: 'Api bisa bersembunyi di dalam tanah.', correct: true, feedback: 'Tepat! Api bisa bersembunyi di dalam tanah gambut.' },
+  { text: 'Supaya gambut terlihat bersih.', feedback: WRONG_Q },
+  { text: 'Supaya petugas bisa bermain air.', feedback: WRONG_Q },
+];
+
 export const Scene6Firefighters: React.FC<Props> = ({ onComplete }) => {
   const [flames, setFlames] = useState([1, 2, 3]);
   const [wet, setWet] = useState(false);
   const [planted, setPlanted] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
+  const [showQ, setShowQ] = useState(false);
+  const [answered, setAnswered] = useState(false);
 
   const fireOut = flames.length === 0;
 
@@ -48,7 +60,7 @@ export const Scene6Firefighters: React.FC<Props> = ({ onComplete }) => {
     }
     setHint(null);
     setPlanted(true);
-    speechService.speak('Hebat! Tiga bintang emas!');
+    speakThen('Hebat! Tiga bintang emas!', () => setShowQ(true), 6000);
   };
 
   const steps = [
@@ -155,9 +167,9 @@ export const Scene6Firefighters: React.FC<Props> = ({ onComplete }) => {
         )}
       </Arena>
 
-      {planted && (
-        <NextRow onClick={onComplete} icon="▶" label="Lanjut" />
-      )}
+      {planted && showQ && <ThinkQuestion question={QUESTION} options={OPTIONS} onDone={() => setAnswered(true)} />}
+
+      {answered && <NextRow onClick={onComplete} icon="▶" label="Lanjut" />}
     </div>
   );
 };

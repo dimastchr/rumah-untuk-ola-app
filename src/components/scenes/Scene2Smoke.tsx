@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { speechService } from '../../utils/speech';
 import { Arena, Avatar, Bubble, NextRow } from '../ui';
+import { ThinkQuestion } from '../Think';
+import { speakThen } from '../../utils/speakThen';
 
 interface Props {
   onComplete: () => void;
@@ -10,12 +12,23 @@ interface Props {
 const WRONG = 'Duh, di bawah tanah ada asap tebal. Udara di bawah tidak sehat. Ayo berayun ke pohon hijau yang udaranya lebih bersih!';
 const RIGHT = 'Hebat! Di pohon hijau udaranya lebih bersih.';
 
+const QUESTION = 'Mengapa pohon hijau lebih aman untuk Ola?';
+const WRONG_Q = 'Coba ingat lagi. Di mana asapnya lebih tebal?';
+const OPTIONS = [
+  { text: 'Asap di bawah lebih tebal.', correct: true, feedback: 'Benar! Asap di bawah lebih tebal, udara di pohon lebih bersih.' },
+  { text: 'Pohon hijau lebih tinggi dari awan.', feedback: WRONG_Q },
+  { text: 'Ola ingin bermain petak umpet.', feedback: WRONG_Q },
+];
+
 export const Scene2Smoke: React.FC<Props> = ({ onComplete }) => {
   const [choice, setChoice] = useState<'none' | 'ground' | 'tree'>('none');
+  const [showQ, setShowQ] = useState(false);
+  const [answered, setAnswered] = useState(false);
 
   const choose = (c: 'ground' | 'tree') => {
     setChoice(c);
-    speechService.speak(c === 'ground' ? WRONG : RIGHT);
+    if (c === 'ground') speechService.speak(WRONG);
+    else speakThen(RIGHT, () => setShowQ(true), 6000);
   };
 
   return (
@@ -69,9 +82,11 @@ export const Scene2Smoke: React.FC<Props> = ({ onComplete }) => {
         {choice === 'tree' && <Bubble who="ola" tone="ok">🌳 {RIGHT}</Bubble>}
       </Arena>
 
-      {choice === 'tree' && (
-        <NextRow onClick={onComplete} icon="▶" label="Lanjut" />
+      {choice === 'tree' && showQ && (
+        <ThinkQuestion question={QUESTION} options={OPTIONS} onDone={() => setAnswered(true)} />
       )}
+
+      {answered && <NextRow onClick={onComplete} icon="▶" label="Lanjut" />}
     </div>
   );
 };

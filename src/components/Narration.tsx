@@ -1,7 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { SceneData, ReadingLevel } from '../types';
+import { SceneData, ReadingLevel, READING_LEVELS } from '../types';
+
+export const LEVEL_LABEL: Record<ReadingLevel, { icon: string; name: string }> = {
+  mudah: { icon: '🌱', name: 'Mudah' },
+  sedang: { icon: '🌿', name: 'Sedang' },
+  menantang: { icon: '🌳', name: 'Menantang' },
+};
 import { speechService, PlayResult } from '../utils/speech';
 import { syllabify } from '../utils/syllables';
+import { setNarrationPlaying } from '../utils/narrationBus';
 
 /* Bobot waktu per kata: panjang kata + jeda tanda baca. Dipakai untuk sorot kata
    sebanding dengan currentTime/duration audio asli (sinkron persis per kata tidak tersedia). */
@@ -30,6 +37,7 @@ export const NarrationCard: React.FC<{ scene: SceneData; soundEnabled: boolean; 
 
   const play = () => {
     setActive(-1);
+    setNarrationPlaying(true);
     const audio = speechService.playAudio(scene.narrationAudio, {
       onTimeUpdate: (t) => {
         const span = scene.speechEnd - scene.speechStart;
@@ -41,11 +49,16 @@ export const NarrationCard: React.FC<{ scene: SceneData; soundEnabled: boolean; 
         setActive(idx);
       },
       onEnded: () => {
+        setNarrationPlaying(false);
         setStatus('ended');
         setTimeout(() => setActive(-1), 1200);
       },
-      onStatus: (s) => setStatus(s),
+      onStatus: (s) => {
+        if (s !== 'playing') setNarrationPlaying(false);
+        setStatus(s);
+      },
     });
+    if (!audio) setNarrationPlaying(false);
     audioRef.current = audio;
   };
 
@@ -54,6 +67,7 @@ export const NarrationCard: React.FC<{ scene: SceneData; soundEnabled: boolean; 
     if (soundEnabled) play();
     else setStatus('muted');
     const off = speechService.onStop(() => {
+      setNarrationPlaying(false);
       setActive(-1);
       audioRef.current = null;
       setStatus((s) => (s === 'playing' || s === 'paused' ? 'ended' : s));
@@ -61,6 +75,7 @@ export const NarrationCard: React.FC<{ scene: SceneData; soundEnabled: boolean; 
     return () => {
       off();
       speechService.stopAudio();
+      setNarrationPlaying(false);
       audioRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,6 +111,7 @@ export const NarrationCard: React.FC<{ scene: SceneData; soundEnabled: boolean; 
             type="button"
             onClick={() => {
               audioRef.current?.pause();
+              setNarrationPlaying(false);
               setStatus('paused');
             }}
             aria-label="Jeda narasi"
@@ -140,7 +156,7 @@ export const NarrationCard: React.FC<{ scene: SceneData; soundEnabled: boolean; 
   );
 };
 
-/* ---------------- Teks bacaan anak (Mudah/Sedang) ---------------- */
+/* ---------------- Teks bacaan anak (Mudah/Sedang/Menantang) ---------------- */
 export const ReadingCard: React.FC<{
   lines: string[];
   level: ReadingLevel;
@@ -217,41 +233,40 @@ export const ReadingCard: React.FC<{
 
   return (
     <div className="rounded-[28px] bg-gradient-to-br from-sun-100 to-white border-4 border-sun-300 p-3 sm:p-5 shadow-md space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <h3 className="font-display text-xl font-bold text-bark">📖 Ayo Membaca</h3>
-        <div className="flex items-center gap-2">
-          <div role="group" aria-label="Pilih level bacaan" className="flex rounded-2xl bg-white p-1 border-2 border-sun-200">
-            {(['mudah', 'sedang'] as const).map((l) => (
-              <button
-                key={l}
-                type="button"
-                aria-pressed={level === l}
-                onClick={() => onLevel(l)}
-                className={`min-h-12 rounded-xl px-3 font-display text-base font-bold ${
-                  level === l ? 'bg-forest-700 text-white' : 'text-forest-800'
-                }`}
-              >
-                {l === 'mudah' ? '🌱 Mudah' : '🌿 Sedang'}
-              </button>
-            ))}
-          </div>
+        <button
+          type="button"
+          onClick={onToggleCase}
+          aria-pressed={isUppercase}
+          aria-label={isUppercase ? 'Ganti ke huruf kecil' : 'Ganti ke huruf besar'}
+          className="min-h-12 min-w-12 rounded-2xl bg-white border-2 border-sun-200 px-3 font-display text-lg font-bold text-bark"
+        >
+          {isUppercase ? 'Aa' : 'AA'}
+        </button>
+      </div>
+      <div role="group" aria-label="Pilih level bacaan" className="grid grid-cols-3 gap-1 rounded-2xl bg-white p-1 border-2 border-sun-200">
+        {READING_LEVELS.map((l) => (
           <button
+            key={l}
             type="button"
-            onClick={onToggleCase}
-            aria-pressed={isUppercase}
-            aria-label={isUppercase ? 'Ganti ke huruf kecil' : 'Ganti ke huruf besar'}
-            className="min-h-12 min-w-12 rounded-2xl bg-white border-2 border-sun-200 px-3 font-display text-lg font-bold text-bark"
+            aria-pressed={level === l}
+            onClick={() => onLevel(l)}
+            className={`flex min-h-12 min-w-0 flex-col items-center justify-center rounded-xl px-1 font-display text-sm sm:flex-row sm:gap-1 sm:text-base font-bold leading-tight ${
+              level === l ? 'bg-forest-700 text-white' : 'text-forest-800'
+            }`}
           >
-            {isUppercase ? 'Aa' : 'AA'}
+            <span aria-hidden="true">{LEVEL_LABEL[l].icon}</span>
+            <span>{LEVEL_LABEL[l].name}</span>
           </button>
-        </div>
+        ))}
       </div>
 
       <div className="space-y-1" aria-label={text}>
         {(() => {
           let wi = -1;
           return lines.map((line, li) => (
-            <p key={li} className="flex flex-wrap gap-x-2 gap-y-1 font-display text-3xl sm:text-4xl font-bold leading-tight">
+            <p key={li} className={`flex flex-wrap gap-x-2 gap-y-1 font-display font-bold leading-tight ${level === 'menantang' ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl'}`}>
               {line
                 .split(/\s+/)
                 .filter(Boolean)

@@ -3,6 +3,8 @@ import { motion } from 'motion/react';
 import { speechService } from '../../utils/speech';
 import { Draggable } from '../Draggable';
 import { Arena, Avatar, Bubble, CharKey, NextRow } from '../ui';
+import { ThinkQuestion } from '../Think';
+import { speakThen } from '../../utils/speakThen';
 
 interface Props {
   onComplete: () => void;
@@ -31,12 +33,23 @@ const hintFor = (a: (typeof ANIMALS)[number]) =>
 
 const ALL_DONE = 'Nyam-nyam, terima kasih! Makanan mereka sudah tepat.';
 
+const QUESTION = 'Kalau pohon ara terbakar, siapa paling kesulitan makan?';
+const WRONG_Q = 'Coba ingat lagi. Siapa yang suka buah ara?';
+const OPTIONS = [
+  { text: 'Rara si rangkong', correct: true, feedback: 'Benar! Rara suka buah ara. Tanpa pohon ara, Rara kesulitan makan.' },
+  { text: 'Bima si bekantan', feedback: WRONG_Q },
+  { text: 'Ola si orangutan', feedback: WRONG_Q },
+];
+
 export const Scene4Friends: React.FC<Props> = ({ onComplete }) => {
   const [fed, setFed] = useState<AnimalId[]>([]);
   const [selected, setSelected] = useState<FoodId | null>(null);
   const [hover, setHover] = useState<string | null>(null);
   const [shake, setShake] = useState<AnimalId | null>(null);
   const [msg, setMsg] = useState<{ text: string; tone: 'ok' | 'hint' | 'info'; who?: CharKey } | null>(null);
+
+  const [showQ, setShowQ] = useState(false);
+  const [answered, setAnswered] = useState(false);
 
   const allFed = fed.length === ANIMALS.length;
 
@@ -49,7 +62,7 @@ export const Scene4Friends: React.FC<Props> = ({ onComplete }) => {
       setFed(next);
       if (next.length === ANIMALS.length) {
         setMsg({ text: ALL_DONE, tone: 'ok' });
-        speechService.speak(ALL_DONE);
+        speakThen(ALL_DONE, () => setShowQ(true), 7000);
       } else {
         setMsg({ text: `Nyam! ${a.name} senang.`, tone: 'ok', who: a.id });
         speechService.speak(`Nyam! ${a.name} senang.`);
@@ -138,9 +151,9 @@ export const Scene4Friends: React.FC<Props> = ({ onComplete }) => {
         )}
       </Arena>
 
-      {allFed && (
-        <NextRow onClick={onComplete} icon="▶" label="Lanjut" />
-      )}
+      {allFed && showQ && <ThinkQuestion question={QUESTION} options={OPTIONS} onDone={() => setAnswered(true)} />}
+
+      {answered && <NextRow onClick={onComplete} icon="▶" label="Lanjut" />}
     </div>
   );
 };

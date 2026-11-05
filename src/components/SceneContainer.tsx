@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { SCENES, ReadingLevel } from '../types';
+import { SCENES, ReadingLevel, linesFor } from '../types';
 import { NarrationCard, ReadingCard } from './Narration';
 import { speechService } from '../utils/speech';
 
@@ -30,7 +30,7 @@ export const SceneContainer: React.FC<SceneContainerProps> = ({
   const scene = SCENES[sceneId];
   if (!scene) return null;
 
-  const lines = readingLevel === 'mudah' ? scene.easyLines : scene.mediumLines;
+  const lines = linesFor(scene, readingLevel);
   const prevTarget = sceneId > 1 ? sceneId - 1 : 0;
   const nextTarget = sceneId < 7 ? sceneId + 1 : 8;
   const canNext = unlockedScenes.includes(nextTarget);

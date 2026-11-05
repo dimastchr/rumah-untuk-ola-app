@@ -3,6 +3,8 @@ import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { speechService } from '../utils/speech';
 import { Avatar, BigButton } from './ui';
+import { SpeakButton } from './Think';
+import { loadPromise } from '../utils/storage';
 
 interface EndingScreenProps {
   earnedStars: number[];
@@ -18,6 +20,7 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({ earnedStars, savedMe
   const [message, setMessage] = useState(savedMessage || '');
   const [saved, setSaved] = useState(!!savedMessage);
   const [copied, setCopied] = useState<'idle' | 'ok' | 'fail'>('idle');
+  const [promise] = useState(() => loadPromise());
 
   useEffect(() => {
     // Konfeti dari dua sudut bawah, di bawah lapisan teks (tidak menutupi tulisan) dan mati bila "kurangi gerak" aktif
@@ -99,6 +102,16 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({ earnedStars, savedMe
           </div>
         </div>
       </section>
+
+      {promise && (
+        <section aria-label="Janjimu" className="rounded-[32px] border-4 border-forest-200 bg-forest-50 p-4 sm:p-6 shadow-md space-y-2">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-forest-800">🤝 Janjimu</h2>
+          <div className="flex items-center gap-3 rounded-3xl border-4 border-sun-300 bg-white p-4">
+            <p className="flex-1 font-display text-2xl font-bold text-bark">“{promise}”</p>
+            <SpeakButton text={promise} label="Dengar janjimu" />
+          </div>
+        </section>
+      )}
 
       <section className="rounded-[32px] border-4 border-sky-200 bg-white p-4 sm:p-6 shadow-md space-y-3">
         <h2 className="font-display text-2xl sm:text-3xl font-bold text-sky-700">✏️ Tulis satu kalimat untuk Ola</h2>

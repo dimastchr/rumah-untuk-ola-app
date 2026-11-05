@@ -1,22 +1,38 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { speechService } from '../../utils/speech';
 import { Arena, Avatar, BigButton, Bubble, NextRow } from '../ui';
+import { ThinkQuestion, OrderCards } from '../Think';
 
 interface Props {
   onComplete: () => void;
 }
 
-const POLITE = 'Jangan bakar, Pak. Hutan rumah kami.';
-const IMPOLITE = 'Hei, jangan bakar!';
 const BAPAK = 'Baik nak, Bapak tidak jadi membakar lahan.';
 const PRAISE = 'Hebat! Kalimatmu santun.';
 const MAX_MS = 15000;
 
-type Step = 'choose' | 'record' | 'recording' | 'recorded';
+// C5: menilai tiga kalimat ajakan
+const QUESTION = 'Kalimat mana yang paling tepat untuk mengajak Bapak?';
+const OPTIONS = [
+  { text: '“Hei, jangan bakar!”', feedback: 'Yuk, ajak dengan sopan.' },
+  { text: '“Jangan bakar, Pak. Hutan rumah kami.”', feedback: 'Sudah santun. Coba cari yang juga punya alasan.' },
+  {
+    text: '“Maaf, Pak, jangan bakar lahan karena asapnya membuat kami batuk.”',
+    correct: true,
+    feedback: 'Hebat! Kalimatmu santun dan ada alasannya.',
+  },
+];
+
+// C6: susun kalimat ajakan sendiri
+const BUILD_INSTRUCTION = 'Susun kalimat ajakanmu sendiri.';
+const BUILD_WORDS = ['Maaf, Pak,', 'jangan bakar lahan', 'karena', 'hutan rumah kami.'];
+const BUILD_WRONG = 'Susun lagi, ya. Mulai dengan kata maaf.';
+const BUILT = 'Maaf, Pak, jangan bakar lahan karena hutan rumah kami.';
+
+type Step = 'evaluate' | 'build' | 'record' | 'recording' | 'recorded';
 
 export const Scene5Village: React.FC<Props> = ({ onComplete }) => {
-  const [step, setStep] = useState<Step>('choose');
-  const [wrong, setWrong] = useState(false);
+  const [step, setStep] = useState<Step>('evaluate');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [playingBack, setPlayingBack] = useState(false);
   const [bapak, setBapak] = useState(false);
@@ -50,16 +66,6 @@ export const Scene5Village: React.FC<Props> = ({ onComplete }) => {
     speechService.speak(BAPAK, { rate: 0.85, pitch: 0.8 });
   };
 
-  const choosePolite = () => {
-    setWrong(false);
-    setStep('record');
-    speechService.speak(PRAISE);
-  };
-
-  const chooseImpolite = () => {
-    setWrong(true);
-    speechService.speak('Yuk, ajak dengan sopan.');
-  };
 
   const startRec = async () => {
     setMicError(false);
@@ -128,35 +134,27 @@ export const Scene5Village: React.FC<Props> = ({ onComplete }) => {
           </div>
         </div>
 
-        {step === 'choose' && (
-          <>
-            <p className="text-lg font-semibold text-bark">Pilih kalimat untuk Bapak.</p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={chooseImpolite}
-                className="min-h-20 rounded-3xl border-4 border-sky-200 bg-white p-4 text-left font-display text-xl sm:text-2xl font-bold text-bark shadow-md active:scale-95"
-              >
-                <span aria-hidden="true">🗣️ </span>“{IMPOLITE}”
-              </button>
-              <button
-                type="button"
-                onClick={choosePolite}
-                className="min-h-20 rounded-3xl border-4 border-sky-200 bg-white p-4 text-left font-display text-xl sm:text-2xl font-bold text-bark shadow-md active:scale-95"
-              >
-                <span aria-hidden="true">🙏 </span>“{POLITE}”
-              </button>
-            </div>
-            {wrong && <Bubble emoji="🤗" tone="hint">Yuk, ajak dengan sopan.</Bubble>}
-          </>
+        {step === 'evaluate' && (
+          <ThinkQuestion question={QUESTION} options={OPTIONS} onDone={() => setStep('build')} />
         )}
 
-        {step !== 'choose' && (
+        {step === 'build' && (
+          <OrderCards
+            instruction={BUILD_INSTRUCTION}
+            items={BUILD_WORDS}
+            correctFeedback={PRAISE}
+            wrongFeedback={BUILD_WRONG}
+            layout="sentence"
+            onDone={() => setStep('record')}
+          />
+        )}
+
+        {step !== 'evaluate' && step !== 'build' && (
           <div className="space-y-4">
             <Bubble emoji="🌟" tone="ok">{PRAISE}</Bubble>
 
             <div className="rounded-3xl border-4 border-sun-300 bg-white p-4 text-center">
-              <p className="font-display text-2xl sm:text-3xl font-bold text-bark">“{POLITE}”</p>
+              <p className="font-display text-2xl sm:text-3xl font-bold text-bark">“{BUILT}”</p>
             </div>
 
             {/* Alur perekam: Rekam → Putar ulang → Lanjut */}

@@ -10,6 +10,8 @@ interface DraggableProps {
   label: string;
   disabled?: boolean;
   selected?: boolean;
+  /** goyang pelan (mis. bahan pengecoh ditolak) */
+  shake?: boolean;
   onTap: (id: string) => void;
   onDrop: (id: string, targetId: string | null) => void;
   onHover?: (targetId: string | null) => void;
@@ -33,6 +35,7 @@ export const Draggable: React.FC<DraggableProps> = ({
   label,
   disabled,
   selected,
+  shake,
   onTap,
   onDrop,
   onHover,
@@ -102,7 +105,7 @@ export const Draggable: React.FC<DraggableProps> = ({
       onPointerUp={(e) => finish(e)}
       onPointerCancel={(e) => finish(e, true)}
       onClick={handleClick}
-      className={`drag-handle relative ${dragging ? 'z-50 cursor-grabbing scale-110 shadow-2xl' : 'cursor-grab transition-transform duration-300'} ${className}`}
+      className={`drag-handle relative ${shake ? 'wiggle' : ''} ${dragging ? 'z-50 cursor-grabbing scale-110 shadow-2xl' : 'cursor-grab transition-transform duration-300'} ${className}`}
       style={{ transform: offset ? `translate(${offset.x}px, ${offset.y}px) scale(1.1)` : undefined }}
     >
       {children}

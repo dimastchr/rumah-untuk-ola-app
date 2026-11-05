@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ASSETS, ReadingLevel } from '../types';
+import { ASSETS, ReadingLevel, READING_LEVELS } from '../types';
+import { LEVEL_LABEL } from './Narration';
 import { BigButton, Avatar } from './ui';
 import { LeafPath } from './LeafPath';
 
@@ -50,18 +51,21 @@ export const CoverScreen: React.FC<CoverScreenProps> = ({
 
           <div>
             <h2 className="mb-2 font-display text-xl font-bold text-bark">Pilih level bacaan:</h2>
-            <div role="group" aria-label="Level bacaan" className="grid grid-cols-2 gap-3">
-              {(['mudah', 'sedang'] as const).map((l) => (
+            <div role="group" aria-label="Level bacaan" className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+              {READING_LEVELS.map((l) => (
                 <button
                   key={l}
                   type="button"
                   aria-pressed={readingLevel === l}
                   onClick={() => onSelectLevel(l)}
-                  className={`min-h-20 rounded-3xl border-4 p-3 font-display text-left transition-all ${
+                  className={`min-h-16 sm:min-h-20 min-w-0 rounded-3xl border-4 p-3 font-display text-left transition-all ${
                     readingLevel === l ? 'border-forest-700 bg-forest-700 text-white shadow-lg' : 'border-forest-200 bg-white text-bark'
                   }`}
                 >
-                  <span className="block text-2xl font-bold">{l === 'mudah' ? '🌱 Mudah' : '🌿 Sedang'}</span>
+                  <span className="block text-2xl font-bold">
+                    <span aria-hidden="true">{LEVEL_LABEL[l].icon} </span>
+                    {LEVEL_LABEL[l].name}
+                  </span>
                   <span className="block text-base font-semibold opacity-90">{l === 'mudah' ? 'Kelas 1' : 'Kelas 2–3'}</span>
                 </button>
               ))}
