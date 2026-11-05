@@ -1,7 +1,13 @@
 /**
- * Suara umpan balik (Web Speech API, id-ID) dan audio narasi MP3.
+ * Suara umpan balik: rekaman MP3 suara Aoede (AI Studio); Web Speech API hanya cadangan
+ * (mis. kalimat yang diketik anak). Audio narasi MP3.
  * Semua berjalan di perangkat; tidak ada data yang dikirim ke server.
  */
+
+import { VOICE_CLIPS, VO_BASE, READ_TIMINGS, WORD_SLICES } from './voiceClips';
+
+export const normVo = (t: string) =>
+  t.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').replace(/\s+/g, ' ').trim();
 
 export type PlayResult = 'playing' | 'blocked' | 'error' | 'muted';
 
@@ -65,7 +71,72 @@ class SpeechService {
       onBoundary?: (charIndex: number) => void;
     }
   ) {
-    if (!this.soundEnabled || !this.synth) {
+    if (!this.soundEnabled) {
+      options?.onEnd?.();
+      return false;
+    }
+    // Utamakan rekaman suara Aoede (AI Studio) agar konsisten dengan narasi
+    const key = normVo(text);
+    const slice = WORD_SLICES[key];
+    if (slice) {
+      try {
+        this.stopAll();
+        const [file, s0, e0] = slice;
+        const audio = new Audio(VO_BASE + file);
+        this.currentAudio = audio;
+        const start = Math.max(0, s0 - 0.04);
+        const stopAt = e0 + 0.08;
+        audio.preload = 'auto';
+        const begin = () => {
+          try { audio.currentTime = start; } catch { /* abaikan */ }
+          const pr = audio.play();
+          if (pr && typeof pr.catch === 'function') pr.catch(() => options?.onEnd?.());
+          window.setTimeout(() => {
+            if (this.currentAudio === audio) { audio.pause(); options?.onEnd?.(); }
+          }, (stopAt - start) * 1000 + 120);
+        };
+        if (audio.readyState >= 1) begin();
+        else audio.addEventListener('loadedmetadata', begin, { once: true });
+        audio.onerror = () => options?.onEnd?.();
+        return true;
+      } catch {
+        /* lanjut */
+      }
+    }
+    const clip = VOICE_CLIPS[key];
+    const timings = READ_TIMINGS[key];
+    if (clip) {
+      try {
+        this.stopAll();
+        const audio = new Audio(VO_BASE + clip);
+        this.currentAudio = audio;
+        let started = false;
+        audio.ontimeupdate = () => {
+          if (!started) { started = true; options?.onStart?.(); }
+          if (!options?.onBoundary) return;
+          if (timings) {
+            // sorot kata sesuai waktu sebenarnya di rekaman
+            const t = audio.currentTime;
+            let idx = 0;
+            for (let k = 0; k < timings.length; k++) if (t >= timings[k][0] - 0.05) idx = k;
+            const words = text.split(/\s+/);
+            let ci = 0;
+            for (let k = 0; k < idx && k < words.length; k++) ci += words[k].length + 1;
+            options.onBoundary(ci);
+          } else if (audio.duration && isFinite(audio.duration)) {
+            options.onBoundary(Math.floor((audio.currentTime / audio.duration) * text.length));
+          }
+        };
+        audio.onended = () => options?.onEnd?.();
+        audio.onerror = () => options?.onEnd?.();
+        const pr = audio.play();
+        if (pr && typeof pr.catch === 'function') pr.catch(() => options?.onEnd?.());
+        return true;
+      } catch {
+        /* lanjut ke suara perangkat */
+      }
+    }
+    if (!this.synth) {
       options?.onEnd?.();
       return false;
     }
