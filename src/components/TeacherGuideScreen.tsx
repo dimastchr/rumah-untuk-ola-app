@@ -55,7 +55,7 @@ const SESSIONS: Record<Key, { label: string; scenes: string; sceneId: number; tp
     sceneId: 7,
     tp: 'TP 6 (menceritakan alur utuh); TP 7 (refleksi akhir dan kesiapan menulis surat dukungan).',
     steps: [
-      'Adegan 7: siswa menyeret Ola ke ibunya (atau menekan “🤗 Dekatkan”) sampai keduanya berpelukan, lalu menyusun janji: satu aksi dan satu alasan.',
+      'Adegan 7: siswa menyeret Ola ke ibunya (atau menekan “🤗 Dekatkan”) sampai keduanya berpelukan, lalu membaca pop-up “Tahukah Kamu?” tentang Himba, orangutan sungguhan korban kebakaran hutan, dan menyusun janji: satu aksi dan satu alasan.',
       'Layar akhir: lihat bintang perolehan dan janji siswa, bahas ajakan menanam pohon untuk Ola.',
       'Siswa menulis satu kalimat untuk Ola (persiapan LKPD 3 surat dukungan).',
     ],
@@ -164,8 +164,7 @@ export const TeacherGuideScreen: React.FC<TeacherGuideScreenProps> = ({ onBack, 
           login; kemajuan siswa tersimpan di perangkat ini saja.
         </p>
         <p className="text-base text-bark/80">
-          Catatan: pop-up “Tahukah Kamu?” Adegan 7 pada naskah belum ditampilkan karena masih menunggu keputusan guru dan belum ada sumber
-          fakta.
+          Sumber pop-up “Tahukah Kamu?” Adegan 7 (Himba): Kompas.com, 19 Juni 2026, “Kisah Himba dan Lykke, 2 dari 5 Orangutan yang Dilepasliarkan Usai Rehabilitasi Puluhan Tahun”.
         </p>
       </section>
 

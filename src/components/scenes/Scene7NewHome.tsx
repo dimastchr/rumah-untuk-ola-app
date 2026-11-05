@@ -4,7 +4,7 @@ import { speechService } from '../../utils/speech';
 import { speakThen } from '../../utils/speakThen';
 import { savePromise } from '../../utils/storage';
 import { ASSETS } from '../../types';
-import { Arena, Avatar, BigButton, Bubble, NextRow } from '../ui';
+import { Arena, Avatar, BigButton, Bubble, NextRow, PopCard } from '../ui';
 import { ThinkShell, SpeakButton, FeedbackBubble, useAutoSpeak } from '../Think';
 
 interface Props {
@@ -12,6 +12,11 @@ interface Props {
 }
 
 const HUG_VO = 'Ola bertemu lagi dengan ibunya! Ola punya rumah lagi.';
+
+// Tahukah Kamu? Sumber: Kompas.com, 19 Juni 2026, "Kisah Himba dan Lykke, 2 dari 5 Orangutan yang Dilepasliarkan
+// Usai Rehabilitasi Puluhan Tahun" (https://regional.kompas.com/read/2026/06/19/151102678/kisah-himba-dan-lykke-2-dari-5-orangutan-yang-dilepasliarkan-usai)
+const FACT =
+  'Himba adalah orangutan sungguhan dari Kalimantan. Waktu bayi, Himba terluka karena kebakaran hutan. Himba dirawat selama 14 tahun. Pada Juni 2026, Himba kembali ke hutan.';
 
 // C6: merancang aksi (jawaban terbuka, semua diterima)
 const PROMISE_INSTRUCTION = 'Apa yang bisa kamu lakukan untuk hutan? Susun janjimu.';
@@ -302,6 +307,20 @@ export const Scene7NewHome: React.FC<Props> = ({ onComplete }) => {
           <Bubble who="ola" tone="ok">{HUG_VO}</Bubble>
         )}
       </Arena>
+
+      <PopCard
+        open={showPromise}
+        title="💡 Tahukah Kamu?"
+        emoji="🦧"
+        tone="green"
+        action={
+          <BigButton tone="sky" icon="🔊" onClick={() => speechService.speak(`Tahukah kamu? ${FACT}`)}>
+            Dengar
+          </BigButton>
+        }
+      >
+        {FACT}
+      </PopCard>
 
       {showPromise && <PromiseBuilder onDone={() => setPromised(true)} />}
 
