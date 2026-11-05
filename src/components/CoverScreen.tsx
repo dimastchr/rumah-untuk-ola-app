@@ -66,7 +66,6 @@ export const CoverScreen: React.FC<CoverScreenProps> = ({
                     <span aria-hidden="true">{LEVEL_LABEL[l].icon} </span>
                     {LEVEL_LABEL[l].name}
                   </span>
-                  <span className="block text-base font-semibold opacity-90">{l === 'mudah' ? 'Kelas 1' : 'Kelas 2–3'}</span>
                 </button>
               ))}
             </div>

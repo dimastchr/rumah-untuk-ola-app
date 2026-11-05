@@ -160,7 +160,7 @@ export const TeacherGuideScreen: React.FC<TeacherGuideScreenProps> = ({ onBack, 
 
       <section className="rounded-[28px] border-4 border-forest-200 bg-white p-4 sm:p-5 shadow-md text-lg text-bark space-y-2">
         <p>
-          Media cerita bercabang <strong>Rumah untuk Ola</strong> untuk Bahasa Indonesia Fase A (kelas 1–3). Dipakai dalam 4 pertemuan. Tanpa
+          Media cerita bercabang <strong>Rumah untuk Ola</strong> untuk Bahasa Indonesia Fase A (kelas 1–2). Dipakai dalam 4 pertemuan. Tanpa
           login; kemajuan siswa tersimpan di perangkat ini saja.
         </p>
         <p className="text-base text-bark/80">
